@@ -73,13 +73,15 @@
   select{background:#0c0e12;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:5px 6px;font-size:12px;width:100%}
   .assoc{color:var(--muted);font-size:11px}
   .unitcap{font-size:10px;color:var(--muted);display:block;margin-bottom:1px}
+  .modetoggle{background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:2px 0;margin-top:2px;text-align:left;display:block}
+  .modetoggle:hover{text-decoration:underline}
   .pie-wrap{display:flex;gap:24px;flex-wrap:wrap;align-items:center;padding:16px}
   .legend{display:flex;flex-direction:column;gap:5px;font-size:13px;min-width:240px}
   .leg{display:flex;align-items:center;gap:8px}
   .leg .sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
   @media print{
     body{background:#fff;color:#000}
-    .bar,.miniadd,.xbtn,.btn,select,.no-print{display:none!important}
+    .bar,.miniadd,.xbtn,.btn,select,.modetoggle,.no-print{display:none!important}
     .panel,.verdict{break-inside:avoid;box-shadow:none;border-color:#bbb}
     input{border:none;color:#000;background:none;padding:0}
     .verdict{position:static}
@@ -414,7 +416,15 @@ function labRows(item, rerender){
   wrap.appendChild(head);
   item.labor.forEach((r,idx)=>{
     const g=el("div","row-grid lab-grid");
-    const tc=el("div"); const ti=el("input"); ti.type="text"; ti.value=r.task; ti.addEventListener("input",e=>{r.task=e.target.value;save();}); tc.appendChild(ti); g.appendChild(tc);
+    const tc=el("div"); const ti=el("input"); ti.type="text"; ti.value=r.task; ti.addEventListener("input",e=>{r.task=e.target.value;save();}); tc.appendChild(ti);
+    const mt=el("button","modetoggle", r.mode==="unit" ? "⇄ switch to hourly" : "⇄ switch to $/unit");
+    mt.title="Price this task hourly (trade × hours) or per unit ($ × qty, e.g. $/sqft)";
+    mt.addEventListener("click",()=>{
+      if(r.mode==="unit"){ delete r.mode; r.trade=r.trade||"general"; r.hours=num(r.hours)||1; }
+      else { r.mode="unit"; r.unitLabel=r.unitLabel||"sqft"; r.unitCost=num(r.unitCost)||3; r.qty=num(r.qty)||firstSqft(item)||1; }
+      save(); rerender();
+    });
+    tc.appendChild(mt); g.appendChild(tc);
     if(r.mode==="unit"){
       const c2=el("div"); c2.innerHTML=`<span class="unitcap">$ / ${r.unitLabel||"unit"}</span>`;
       c2.appendChild(numInput(r,"unitCost","0.01")); g.appendChild(c2);
@@ -441,6 +451,7 @@ function numInput(obj,key,step){
   return i;
 }
 function xBtn(fn){ const b=el("button","xbtn","✕"); b.title="Remove"; b.addEventListener("click",fn); return b; }
+function firstSqft(item){ const m=(item.materials||[]).find(x=>/sq\s?ft|sf/i.test(x.unit||"")); return m?num(m.qty):0; }
 
 function renderSections(){
   const box=$("#sections"); box.innerHTML="";
