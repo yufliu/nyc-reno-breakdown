@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC Reno Cost Breakdown — Contractor vs. Self-GC</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#181b22; --panel2:#1f232c; --line:#2b313c;
+    --text:#e7ebf0; --muted:#9aa4b2; --accent:#4f8cff;
+    --green:#27c08a; --greenbg:#10362b; --amber:#e3a52a; --amberbg:#3a2f10; --red:#ef5a5a; --redbg:#3a1414;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  a{color:var(--accent)}
+  header{padding:18px 22px;border-bottom:1px solid var(--line)}
+  header h1{margin:0 0 4px;font-size:20px}
+  header p{margin:0;color:var(--muted);font-size:13px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 16px 80px}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 0}
+  .btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:7px 12px;cursor:pointer;font-size:13px}
+  .btn:hover{border-color:var(--accent)}
+  .btn.warn:hover{border-color:var(--red)}
+  .grow{flex:1}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:14px 0;overflow:hidden}
+  .panel>h2{margin:0;padding:13px 16px;font-size:15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--panel2)}
+  .panel>h2 .sub{color:var(--muted);font-weight:400;font-size:12px}
+  .pad{padding:12px 16px}
+  .settings{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 18px;padding:14px 16px}
+  .fld{display:flex;flex-direction:column;gap:3px}
+  .fld label{color:var(--muted);font-size:12px}
+  .fld small{color:var(--muted);font-size:11px}
+  input[type=number],input[type=text]{background:#0c0e12;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px 8px;font-size:13px;width:100%}
+  input:focus{outline:none;border-color:var(--accent)}
+  .row-grid{display:grid;gap:6px 10px;align-items:center}
+  .mat-grid{grid-template-columns:1fr 64px 84px 92px 30px}
+  .lab-grid{grid-template-columns:1fr 150px 70px 90px 30px}
+  .rh{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .sec-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .sec-head .name{font-size:15px;font-weight:600}
+  .sec-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px 16px}
+  @media(max-width:760px){.sec-cols{grid-template-columns:1fr}}
+  .blocktitle{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px}
+  .miniadd{background:none;border:1px dashed var(--line);color:var(--muted);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;margin-top:6px}
+  .miniadd:hover{color:var(--text);border-color:var(--accent)}
+  .xbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+  .xbtn:hover{color:var(--red)}
+  .note{color:var(--amber);font-size:12px;margin-top:6px}
+  .badge{font-size:13px;font-weight:800;padding:5px 13px;border-radius:8px;white-space:nowrap;letter-spacing:.01em}
+  .opps{padding:10px 18px;border-top:1px solid var(--line);font-size:13px}
+  .opps b{color:var(--text)}
+  .b-green{background:var(--greenbg);color:var(--green)} .b-amber{background:var(--amberbg);color:var(--amber)} .b-red{background:var(--redbg);color:var(--red)}
+  .sec-foot{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel2)}
+  @media(max-width:760px){.sec-foot{grid-template-columns:1fr 1fr}}
+  .stat{display:flex;flex-direction:column;gap:2px}
+  .stat .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .stat .v{font-size:17px;font-weight:700}
+  .stat .v.sav-pos{color:var(--green)} .stat .v.sav-neg{color:var(--red)}
+  .target-fld{display:flex;align-items:center;gap:6px}
+  .target-fld input{width:96px}
+  .verdict{position:sticky;bottom:0;z-index:5;background:linear-gradient(0deg,var(--panel) 80%,rgba(24,27,34,.85));border:1px solid var(--line);border-radius:12px;margin-top:18px;box-shadow:0 -6px 24px rgba(0,0,0,.45)}
+  .verdict .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:14px 18px}
+  @media(max-width:760px){.verdict .grid{grid-template-columns:1fr 1fr}}
+  .verdict .v{font-size:22px;font-weight:800}
+  .verdict .read{padding:0 18px 14px;color:var(--muted);font-size:13px}
+  .verdict .read b{color:var(--text)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px}
+  .small{font-size:12px;color:var(--muted)}
+  .lic{color:var(--amber);font-size:11px;margin-left:6px}
+  select{background:#0c0e12;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:5px 6px;font-size:12px}
+  .assoc{color:var(--muted);font-size:11px}
+  @media print{
+    body{background:#fff;color:#000}
+    .bar,.miniadd,.xbtn,.btn,select,.no-print{display:none!important}
+    .panel,.verdict{break-inside:avoid;box-shadow:none;border-color:#bbb}
+    input{border:none;color:#000;background:none;padding:0}
+    .verdict{position:static}
+    :root{--text:#000;--muted:#444;--panel:#fff;--panel2:#f3f3f3;--line:#ccc}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>NYC Reno Cost Breakdown <span class="small">· Contractor vs. Self-GC</span></h1>
+  <p>Decompose each quoted line into materials + labor, compare against doing it yourself as general contractor, and see real savings & negotiation room. Every number is editable — your edits auto-save in this browser.</p>
+</header>
+<div class="wrap">
+
+  <div class="panel" style="border-color:var(--accent)">
+    <div class="pad" style="font-size:13px">
+      📋 <b>This is an example template.</b> The numbers below are illustrative NYC defaults — <b>not anyone's real quote</b>. Edit any field to model your own job, or click <b>⬆ Import JSON</b> to load a saved snapshot. <b>Nothing you enter is uploaded</b> — it stays only in your browser (localStorage), so your real numbers never leave your device.
+    </div>
+  </div>
+
+  <div class="bar">
+    <button class="btn" id="addSection">+ Add custom line item</button>
+    <span class="grow"></span>
+    <button class="btn" id="printBtn">🖨 Print / PDF</button>
+    <button class="btn" id="exportBtn">⬇ Export JSON</button>
+    <button class="btn" id="importBtn">⬆ Import JSON</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+    <button class="btn warn" id="resetBtn">↺ Reset to defaults</button>
+  </div>
+
+  <div class="panel">
+    <h2>Global rates & assumptions <span class="sub">change once → applies to every line below</span></h2>
+    <div class="settings" id="settings"></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="panel">
+    <h2>Excluded add-ons <span class="sub">priced per unit — set the quantities</span></h2>
+    <div id="addons"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Self-GC reality costs <span class="sub">what the contractor's price already absorbs but you'd eat</span>
+      <span class="grow"></span>
+      <label class="small no-print" style="font-weight:400"><input type="checkbox" id="selfgcToggle"> include in net</label>
+    </h2>
+    <div class="settings" id="selfgc"></div>
+    <div class="pad small">These are subtracted from gross savings to show what you'd <i>actually</i> pocket. Contingency is a % of your DIY total. "Value of your time" is the hidden cost of being your own project manager.</div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <p class="small" style="margin-top:18px">Defaults are NYC-realistic starting points marked to confirm, not quotes. A typical GC markup is 15–25%; savings beyond that is the premium you pay for convenience, warranty, and not managing subcontractors. Your DIY total is an estimate and not fixed-price — pad it with contingency. Licensed plumbing/electrical work in NYC must be pulled and performed by licensed trades — those line minimums reflect that.</p>
+</div>
+
+<script>
+"use strict";
+const SCHEMA_VERSION = 3;
+const STORE_KEY = "nyc-reno-breakdown";
+
+/* ---------- helpers ---------- */
+const num = v => { const n = parseFloat(v); return (isFinite(n) && n >= 0) ? n : 0; };
+const money = n => (n < 0 ? "-$" : "$") + Math.round(Math.abs(n)).toLocaleString();
+const pct = (sav, base) => base > 0 ? (sav / base) * 100 : null;
+const pctTxt = p => p === null ? "n/a" : Math.round(p) + "%";
+
+/* ---------- default state ---------- */
+function defaults(){
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    rates: { general:35, skilled:60, plumber:150, electrician:150, painter:40 },
+    minCall: { general:0, skilled:150, plumber:400, electrician:350, painter:0 },
+    licensed: { general:false, skilled:false, plumber:true, electrician:true, painter:false },
+    tradeLabel: { general:"General labor", skilled:"Skilled (carpentry/tile)", plumber:"Licensed plumber", electrician:"Licensed electrician", painter:"Painter" },
+    taxPct: 8.875,
+    fairMarkupPct: 15,
+    selfgcOn: true,
+    selfgc: { permits:1500, expediter:800, disposal:600, contingencyPct:10, tools:300, timeHrs:80, timeRate:50, warranty:0 },
+    sections: defaultSections(),
+    addons: defaultAddons()
+  };
+}
+function mk(name, contractor, materials, labor, opts){ return Object.assign({ id:uid(), name, contractor, materials, labor, target:null }, opts||{}); }
+let _seq = 0;
+const uid = () => "r" + ((self.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"") : (Date.now().toString(36)+(_seq++)));
+// Merge any (possibly partial / older) parsed object over fresh defaults so missing keys never crash recompute.
+function coerce(s){
+  const b = defaults();
+  if(!s || typeof s !== "object") return b;
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    rates: Object.assign({}, b.rates, s.rates),
+    minCall: Object.assign({}, b.minCall, s.minCall),
+    licensed: Object.assign({}, b.licensed, s.licensed),
+    tradeLabel: Object.assign({}, b.tradeLabel, s.tradeLabel),
+    taxPct: (s.taxPct!=null)?s.taxPct:b.taxPct,
+    fairMarkupPct: (s.fairMarkupPct!=null)?s.fairMarkupPct:b.fairMarkupPct,
+    selfgcOn: (s.selfgcOn!=null)?!!s.selfgcOn:b.selfgcOn,
+    selfgc: Object.assign({}, b.selfgc, s.selfgc),
+    sections: (Array.isArray(s.sections)&&s.sections.length)?s.sections:b.sections,
+    addons: (Array.isArray(s.addons)&&s.addons.length)?s.addons:b.addons
+  };
+}
+
+function defaultSections(){
+  return [
+    mk("Full bath — tub/shower, tile, vanity, toilet, fan", 12000,
+      [ {name:"Tub/shower unit (acrylic)",qty:1,unit:"ea",cost:700},
+        {name:"Shower valve + trim",qty:1,unit:"ea",cost:130},
+        {name:"Tile (floor+walls)",qty:120,unit:"sqft",cost:4,grades:[["Ceramic $4/sf",4],["Porcelain $7/sf",7],["Stone $14/sf",14]]},
+        {name:"Backer board, thinset, grout, waterproofing",qty:1,unit:"lot",cost:250},
+        {name:"Vanity + top",qty:1,unit:"ea",cost:450},
+        {name:"Faucet",qty:1,unit:"ea",cost:90},
+        {name:"Toilet",qty:1,unit:"ea",cost:200},
+        {name:"Exhaust fan",qty:1,unit:"ea",cost:90},
+        {name:"Misc (caulk, supply lines, trim)",qty:1,unit:"lot",cost:150} ],
+      [ {task:"Demo",trade:"general",hours:8},
+        {task:"Plumbing rough + set fixtures",trade:"plumber",hours:12},
+        {task:"Tile setting",trade:"skilled",hours:16},
+        {task:"Fan wiring",trade:"electrician",hours:2},
+        {task:"Install vanity/toilet/trim",trade:"general",hours:6} ]),
+    mk("Half bath — mirror, vanity, toilet, fan", 2500,
+      [ {name:"Vanity + top",qty:1,unit:"ea",cost:250},
+        {name:"Faucet",qty:1,unit:"ea",cost:80},
+        {name:"Toilet",qty:1,unit:"ea",cost:180},
+        {name:"Mirror",qty:1,unit:"ea",cost:60},
+        {name:"Exhaust fan",qty:1,unit:"ea",cost:90},
+        {name:"Misc",qty:1,unit:"lot",cost:40} ],
+      [ {task:"Plumbing set fixtures",trade:"plumber",hours:3},
+        {task:"Fan wiring",trade:"electrician",hours:2},
+        {task:"Install vanity/mirror/trim",trade:"general",hours:3} ]),
+    mk("Kitchen — countertops, sink, faucet", 5000,
+      [ {name:"Countertop",qty:1,unit:"job",cost:700,grades:[["Laminate $700",700],["Butcher block $900",900],["Quartz $1,800",1800]]},
+        {name:"Sink",qty:1,unit:"ea",cost:180},
+        {name:"Faucet",qty:1,unit:"ea",cost:120},
+        {name:"Misc (brackets, sealant, supply)",qty:1,unit:"lot",cost:80} ],
+      [ {task:"Counter fabricate/install",trade:"skilled",hours:6},
+        {task:"Sink/faucet hookup",trade:"plumber",hours:3},
+        {task:"Misc fitting",trade:"general",hours:2} ]),
+    mk("Vinyl flooring", 1200,
+      [ {name:"LVP / vinyl plank",qty:200,unit:"sqft",cost:2.5,grades:[["Builder $2.50/sf",2.5],["Mid $4/sf",4]]},
+        {name:"Underlayment + trim",qty:1,unit:"lot",cost:80} ],
+      [ {task:"Floor install",trade:"general",hours:8} ]),
+    mk("Reconfigure living room / bedroom space", 3500,
+      [ {name:"Lumber, drywall, fasteners",qty:1,unit:"lot",cost:400} ],
+      [ {task:"Framing / carpentry",trade:"skilled",hours:16},
+        {task:"Demo + cleanup",trade:"general",hours:8},
+        {task:"Move outlets/switches",trade:"electrician",hours:4} ]),
+    mk("Painting (whole unit)", 5500,
+      [ {name:"Paint (incl. primer)",qty:14,unit:"gal",cost:40},
+        {name:"Supplies (rollers, tape, plastic)",qty:1,unit:"lot",cost:200} ],
+      [ {task:"Prep + paint walls/ceilings",trade:"painter",hours:50} ]),
+    mk("Demolition + garbage removal", 1200,
+      [ {name:"Dumpster / contractor bags",qty:1,unit:"lot",cost:500} ],
+      [ {task:"Demo + haul",trade:"general",hours:16} ]),
+    mk("Floor/stair refinishing + paint", 6500,
+      [ {name:"Sandpaper, stain, poly",qty:1,unit:"lot",cost:300},
+        {name:"Drum + edger sander rental",qty:1,unit:"lot",cost:300} ],
+      [ {task:"Sand, stain, seal floors+stairs",trade:"skilled",hours:30} ], {excluded:true})
+  ];
+}
+function defaultAddons(){
+  return [
+    { id:uid(), name:"Interior doors", qty:6, unitContractor:450,
+      materials:[ {name:"Door slab",qty:1,unit:"ea",cost:120},{name:"Knob/lockset",qty:1,unit:"ea",cost:15},{name:"Hinges",qty:1,unit:"set",cost:7},{name:"Frame / jamb kit",qty:1,unit:"ea",cost:55} ],
+      labor:[ {task:"Hang + trim per door",trade:"general",hours:1.5} ], target:null },
+    { id:uid(), name:"Light fixtures", qty:10, unitContractor:175,
+      materials:[ {name:"Fixture",qty:1,unit:"ea",cost:40} ],
+      labor:[ {task:"Install per fixture",trade:"electrician",hours:0.75} ], target:null }
+  ];
+}
+
+/* ---------- load / save ---------- */
+let state = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return coerce(JSON.parse(raw));   // coerce upgrades/repairs any older or partial blob
+  }catch(e){ console.warn("load failed, using defaults", e); }
+  return defaults();
+}
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }, 120);
+}
+
+/* ---------- compute ---------- */
+function materialsCost(rows){
+  let pre = 0; rows.forEach(r=> pre += num(r.qty)*num(r.cost));
+  const tax = pre * (num(state.taxPct)/100);
+  return { pre, tax, total: pre+tax };
+}
+const tradeOf = t => (t in state.rates) ? t : "general";   // unknown trade (e.g. hand-edited import) → general
+function laborCost(rows){
+  // group by trade, apply job minimum per trade
+  const byTrade = {};
+  rows.forEach(r=>{ const t=tradeOf(r.trade); byTrade[t] = (byTrade[t]||0) + num(r.hours); });
+  let total = 0; const mins = [];
+  Object.keys(byTrade).forEach(t=>{
+    const hrs = byTrade[t]; if(hrs<=0) return;
+    const rate = num(state.rates[t]);
+    const raw = hrs*rate;
+    const min = num(state.minCall[t]);
+    if(min>0 && raw<min){ total += min; mins.push(state.tradeLabel[t]+" job min $"+min+" (vs $"+Math.round(raw)+")"); }
+    else total += raw;
+  });
+  return { total, mins };
+}
+function diyForItem(item, mult){
+  // mult scales BOTH material quantities and labor hours (used for add-ons: qty units in one job),
+  // so per-trade job minimums apply ONCE to the whole batch, not per unit.
+  mult = num(mult)||1;
+  const matRows = item.materials.map(r=>({ qty:num(r.qty)*mult, cost:r.cost }));
+  const m = materialsCost(matRows);
+  const labRows = item.labor.map(r=>({ trade:r.trade, hours:num(r.hours)*mult }));
+  const l = laborCost(labRows);
+  return { mat:m, lab:l, diy:m.total+l.total };
+}
+function recommend(savPct, hasLicensed){
+  // Action follows leverage: bigger gap vs contractor = more reason to push or self-perform.
+  if(savPct===null) return ["—","b-amber"];
+  if(savPct < 0)  return ["Let contractor keep","b-red"];      // DIY costs more
+  if(savPct < 15) return ["Fair — let them keep","b-amber"];   // within low end of normal markup
+  if(savPct < 35) return ["Negotiate","b-amber"];              // real room to push
+  return [hasLicensed ? "Negotiate hard (licensed)" : "DIY / negotiate hard","b-green"]; // big gap = max leverage
+}
+
+/* ---------- render ---------- */
+const $ = sel => document.querySelector(sel);
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+
+function render(){
+  renderSettings();
+  renderSections();
+  renderAddons();
+  renderSelfGC();
+  recompute();
+}
+
+function renderSettings(){
+  const box=$("#settings"); box.innerHTML="";
+  Object.keys(state.rates).forEach(t=>{
+    const f=el("div","fld");
+    f.innerHTML=`<label>${state.tradeLabel[t]} — $/hr ${state.licensed[t]?'<span class="lic">licensed</span>':''}</label>`;
+    const i=el("input"); i.type="number"; i.min="0"; i.value=state.rates[t];
+    i.addEventListener("input",e=>{ state.rates[t]=num(e.target.value); recompute(); save(); });
+    f.appendChild(i);
+    const s=el("small",null,`job min $<span></span>`);
+    const mi=el("input"); mi.type="number"; mi.min="0"; mi.value=state.minCall[t]; mi.style.cssText="width:70px;display:inline-block;margin-top:3px";
+    mi.title="Minimum to get this trade to show up";
+    mi.addEventListener("input",e=>{ state.minCall[t]=num(e.target.value); recompute(); save(); });
+    f.appendChild(mi);
+    box.appendChild(f);
+  });
+  const tf=el("div","fld"); tf.innerHTML=`<label>Material sales tax %</label>`;
+  const ti=el("input"); ti.type="number"; ti.min="0"; ti.step="0.001"; ti.value=state.taxPct;
+  ti.addEventListener("input",e=>{ state.taxPct=num(e.target.value); recompute(); save(); });
+  tf.appendChild(ti); box.appendChild(tf);
+  const mf=el("div","fld"); mf.innerHTML=`<label>Fair markup % <span class="assoc">(your counter = cost + this)</span></label>`;
+  const mi=el("input"); mi.type="number"; mi.min="0"; mi.value=state.fairMarkupPct;
+  mi.addEventListener("input",e=>{ state.fairMarkupPct=num(e.target.value); recompute(); save(); });
+  mf.appendChild(mi); box.appendChild(mf);
+}
+
+function rowControls(item, list, key){
+  // returns a function to re-render this section
+  return ()=>renderSections();
+}
+
+function matRows(item, rerender){
+  const wrap=el("div");
+  const head=el("div","row-grid mat-grid");
+  head.innerHTML=`<span class="rh">Material</span><span class="rh">Qty</span><span class="rh">Unit $</span><span class="rh">Subtotal</span><span></span>`;
+  wrap.appendChild(head);
+  item.materials.forEach((r,idx)=>{
+    const g=el("div","row-grid mat-grid");
+    let nameCell;
+    if(r.grades){
+      nameCell=el("div");
+      const ni=el("input"); ni.type="text"; ni.value=r.name; ni.style.marginBottom="4px";
+      ni.addEventListener("input",e=>{r.name=e.target.value;save();}); nameCell.appendChild(ni);
+      const sel=el("select");
+      r.grades.forEach(([lab,val])=>{ const o=el("option",null,lab); o.value=val; if(num(val)===num(r.cost))o.selected=true; sel.appendChild(o); });
+      sel.addEventListener("change",e=>{ r.cost=num(e.target.value); save(); rerender(); });
+      nameCell.appendChild(sel);
+    }else{
+      nameCell=el("div"); const ni=el("input"); ni.type="text"; ni.value=r.name; ni.addEventListener("input",e=>{r.name=e.target.value;save();}); nameCell.appendChild(ni);
+    }
+    g.appendChild(nameCell);
+    g.appendChild(numInput(r,"qty",rerender));
+    g.appendChild(numInput(r,"cost",rerender,"0.01"));
+    const sub=el("div","assoc"); sub.dataset.sub=item.id+"-m-"+idx; g.appendChild(sub);
+    g.appendChild(xBtn(()=>{ item.materials.splice(idx,1); save(); rerender(); }));
+    wrap.appendChild(g);
+  });
+  const add=el("button","miniadd","+ material"); add.addEventListener("click",()=>{ item.materials.push({name:"New material",qty:1,unit:"ea",cost:0}); save(); rerender(); });
+  wrap.appendChild(add);
+  return wrap;
+}
+function labRows(item, rerender){
+  const wrap=el("div");
+  const head=el("div","row-grid lab-grid");
+  head.innerHTML=`<span class="rh">Task</span><span class="rh">Trade</span><span class="rh">Hours</span><span class="rh">Cost</span><span></span>`;
+  wrap.appendChild(head);
+  item.labor.forEach((r,idx)=>{
+    const g=el("div","row-grid lab-grid");
+    const tc=el("div"); const ti=el("input"); ti.type="text"; ti.value=r.task; ti.addEventListener("input",e=>{r.task=e.target.value;save();}); tc.appendChild(ti); g.appendChild(tc);
+    const sel=el("select");
+    Object.keys(state.rates).forEach(t=>{ const o=el("option",null,state.tradeLabel[t]); o.value=t; if(t===r.trade)o.selected=true; sel.appendChild(o); });
+    sel.addEventListener("change",e=>{ r.trade=e.target.value; recompute(); save(); rerender(); });
+    g.appendChild(sel);
+    g.appendChild(numInput(r,"hours",rerender,"0.25"));
+    const cc=el("div","assoc"); cc.dataset.lab=item.id+"-l-"+idx; g.appendChild(cc);
+    g.appendChild(xBtn(()=>{ item.labor.splice(idx,1); save(); rerender(); }));
+    wrap.appendChild(g);
+  });
+  const add=el("button","miniadd","+ labor task"); add.addEventListener("click",()=>{ item.labor.push({task:"New task",trade:"general",hours:1}); save(); rerender(); });
+  wrap.appendChild(add);
+  return wrap;
+}
+function numInput(obj,key,rerender,step){
+  const i=el("input"); i.type="number"; i.min="0"; if(step)i.step=step; i.value=obj[key];
+  i.addEventListener("input",e=>{ obj[key]=num(e.target.value); recompute(); save(); });
+  return i;
+}
+function xBtn(fn){ const b=el("button","xbtn","✕"); b.title="Remove"; b.addEventListener("click",fn); return b; }
+
+function renderSections(){
+  const box=$("#sections"); box.innerHTML="";
+  state.sections.forEach(item=>{
+    box.appendChild(sectionPanel(item,false));
+  });
+}
+function renderAddons(){
+  const box=$("#addons"); box.innerHTML="";
+  state.addons.forEach(item=> box.appendChild(sectionPanel(item,true)) );
+}
+
+function sectionPanel(item, isAddon){
+  const p=el("div","panel"); p.style.margin="0 0 12px";
+  const rerender=()=> { const np=sectionPanel(item,isAddon); p.replaceWith(np); recompute(); };
+  // header
+  const head=el("div","sec-head");
+  const left=el("div");
+  const nm=el("input"); nm.type="text"; nm.value=item.name; nm.style.cssText="font-size:15px;font-weight:600;min-width:280px;border:none;background:none;padding:0";
+  nm.addEventListener("input",e=>{item.name=e.target.value;save();}); left.appendChild(nm);
+  if(item.excluded) left.appendChild(el("span","small"," · (excluded add-on in quote)"));
+  head.appendChild(left);
+  const right=el("div"); right.style.cssText="display:flex;align-items:center;gap:12px;flex-wrap:wrap";
+  if(isAddon){
+    right.appendChild(field("Qty", item, "qty", recompute, 70));
+    right.appendChild(field("$/unit (their price)", item, "unitContractor", recompute, 110));
+    const cp=el("div","stat"); cp.innerHTML=`<span class="k">Contractor total</span>`; const v=el("span","v"); v.dataset.contractor=item.id; cp.appendChild(v); right.appendChild(cp);
+  }else{
+    right.appendChild(field("Contractor $", item, "contractor", recompute, 110));
+  }
+  const badge=el("span","badge"); badge.dataset.badge=item.id; right.appendChild(badge);
+  const del=el("button","xbtn","✕"); del.title="Delete line"; del.addEventListener("click",()=>{
+    const arr = isAddon?state.addons:state.sections; const i=arr.indexOf(item); if(i>=0)arr.splice(i,1); save(); render();
+  }); right.appendChild(del);
+  head.appendChild(right);
+  p.appendChild(head);
+  // body
+  const cols=el("div","sec-cols");
+  const mc=el("div"); mc.appendChild(el("div","blocktitle",isAddon?"Materials (per unit)":"Materials")); mc.appendChild(matRows(item,rerender));
+  const lc=el("div"); lc.appendChild(el("div","blocktitle",isAddon?"Labor (per unit)":"Labor")); lc.appendChild(labRows(item,rerender));
+  cols.appendChild(mc); cols.appendChild(lc); p.appendChild(cols);
+  const noteWrap=el("div","pad"); noteWrap.dataset.note=item.id; noteWrap.style.cssText="padding-top:0"; p.appendChild(noteWrap);
+  // footer stats
+  const foot=el("div","sec-foot");
+  foot.appendChild(stat("DIY materials (incl. tax)", item.id, "mat"));
+  foot.appendChild(stat("DIY labor", item.id, "lab"));
+  foot.appendChild(stat(isAddon?"DIY total (all units)":"DIY total", item.id, "diy"));
+  const sv=el("div","stat"); sv.innerHTML=`<span class="k">Savings vs contractor</span>`; const svv=el("span","v"); svv.dataset.sav=item.id; sv.appendChild(svv); foot.appendChild(sv);
+  p.appendChild(foot);
+  // negotiation target
+  const tgt=el("div","pad"); tgt.style.cssText="display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);background:var(--panel2)";
+  tgt.innerHTML=`<span class="small">🎯 Your negotiation target:</span>`;
+  const tin=el("input"); tin.type="number"; tin.min="0"; tin.style.width="110px";
+  tin.placeholder="auto"; if(item.target!=null) tin.value=item.target;
+  tin.addEventListener("input",e=>{ item.target = e.target.value===""?null:num(e.target.value); recompute(); save(); });
+  tgt.appendChild(tin);
+  const tinfo=el("span","small"); tinfo.dataset.tinfo=item.id; tgt.appendChild(tinfo);
+  p.appendChild(tgt);
+  return p;
+}
+function field(label,obj,key,onIn,width){
+  const f=el("div","fld"); f.style.minWidth=(width||90)+"px";
+  f.innerHTML=`<label>${label}</label>`;
+  const i=el("input"); i.type="number"; i.min="0"; i.value=obj[key]; if(width)i.style.width=width+"px";
+  i.addEventListener("input",e=>{ obj[key]=num(e.target.value); onIn(); save(); });
+  f.appendChild(i); return f;
+}
+function stat(label,id,kind){ const s=el("div","stat"); s.innerHTML=`<span class="k">${label}</span>`; const v=el("span","v"); v.dataset[kind]=id; s.appendChild(v); return s; }
+
+function renderSelfGC(){
+  $("#selfgcToggle").checked = state.selfgcOn;
+  const box=$("#selfgc"); box.innerHTML="";
+  const defs=[
+    ["permits","DOB permit fees $"],["expediter","Expediter / filing $"],["disposal","Disposal / dumpster $"],
+    ["contingencyPct","Contingency % (of DIY)"],["tools","Tool rental $"],["timeHrs","Your PM time (hrs)"],["timeRate","Your time $/hr"],
+    ["warranty","Warranty / redo-risk reserve $"]
+  ];
+  defs.forEach(([k,label])=>{
+    const f=el("div","fld"); f.innerHTML=`<label>${label}</label>`;
+    const i=el("input"); i.type="number"; i.min="0"; i.value=state.selfgc[k];
+    i.addEventListener("input",e=>{ state.selfgc[k]=num(e.target.value); recompute(); save(); });
+    f.appendChild(i); box.appendChild(f);
+  });
+}
+
+/* ---------- recompute & paint outputs ---------- */
+function recompute(){
+  let cTotal=0, dTotal=0; const opps=[];
+  const allItems=[...state.sections.map(s=>({it:s,addon:false})), ...state.addons.map(a=>({it:a,addon:true}))];
+  allItems.forEach(({it,addon})=>{
+    const mult = addon ? num(it.qty) : 1;
+    const per = diyForItem(it, mult);
+    let contractor; const diy = per.diy;
+    if(addon){
+      contractor = num(it.qty)*num(it.unitContractor);
+      setTxt(`[data-contractor="${it.id}"]`, money(contractor));
+    }else{
+      contractor = num(it.contractor);
+    }
+    // footer totals are all-units (mult already applied)
+    setTxt(`[data-mat="${it.id}"]`, money(per.mat.total));
+    setTxt(`[data-lab="${it.id}"]`, money(per.lab.total));
+    setTxt(`[data-diy="${it.id}"]`, money(diy));
+    // per-row subtotals
+    it.materials.forEach((r,idx)=> setTxt(`[data-sub="${it.id}-m-${idx}"]`, money(num(r.qty)*num(r.cost))) );
+    it.labor.forEach((r,idx)=> setTxt(`[data-lab="${it.id}-l-${idx}"]`, money(num(r.hours)*num(state.rates[tradeOf(r.trade)]))) );
+    const sav=contractor-diy; const p=pct(sav,contractor);
+    const savEl=document.querySelector(`[data-sav="${it.id}"]`);
+    if(savEl){ savEl.textContent = money(sav)+"  ("+pctTxt(p)+")"; savEl.className="v "+(sav>=0?"sav-pos":"sav-neg"); }
+    // badge
+    const hasLicensed = it.labor.some(r=>state.licensed[r.trade] && num(r.hours)>0);
+    const [btxt,bcls]=recommend(p,hasLicensed);
+    const bEl=document.querySelector(`[data-badge="${it.id}"]`); if(bEl){ bEl.textContent=btxt; bEl.className="badge "+bcls; }
+    // notes (job minimums)
+    const noteEl=document.querySelector(`[data-note="${it.id}"]`);
+    if(noteEl){ noteEl.innerHTML = per.lab.mins.length ? per.lab.mins.map(m=>`<div class="note">⚠ ${m}</div>`).join("") : ""; }
+    // negotiation target — framed as the contractor's OWN cost structure (materials + market labor + fair markup),
+    // which is far harder for them to wave off than a "what I'd DIY it for" number.
+    const markup = num(state.fairMarkupPct);
+    const laborHrs = it.labor.reduce((a,r)=>a+num(r.hours),0)*mult;
+    const auto = Math.round(diy*(1+markup/100));
+    const tEff = (it.target!=null)?num(it.target):auto;
+    const tinfo=document.querySelector(`[data-tinfo="${it.id}"]`);
+    if(tinfo){ const gap=contractor-tEff;
+      tinfo.innerHTML = `Materials ~<b>${money(per.mat.total)}</b> + ~<b>${Math.round(laborHrs)} labor-hrs</b> at market ≈ <b>${money(diy)}</b> true cost. At a fair ${markup}% markup that's <b>${money(auto)}</b> vs their <b>${money(contractor)}</b>. Counter at ${money(tEff)} → ${gap>=0?'cut':'add'} <b style="color:var(--${gap>=0?'green':'red'})">${money(Math.abs(gap))}</b>.`; }
+    opps.push({name:it.name, sav:contractor-diy, pct:pct(contractor-diy,contractor)});
+    cTotal+=contractor; dTotal+=diy;
+  });
+  paintVerdict(cTotal,dTotal,opps);
+}
+function setTxt(sel,txt){ const e=document.querySelector(sel); if(e)e.textContent=txt; }
+
+function paintVerdict(cTotal,dTotal,opps){
+  const sc=state.selfgc;
+  const contingency = dTotal*(num(sc.contingencyPct)/100);
+  const timeCost = num(sc.timeHrs)*num(sc.timeRate);
+  const gcCosts = num(sc.permits)+num(sc.expediter)+num(sc.disposal)+contingency+num(sc.tools)+timeCost+num(sc.warranty);
+  const gross = cTotal-dTotal;
+  const net = state.selfgcOn ? gross-gcCosts : gross;
+  const netNoTime = state.selfgcOn ? gross-(gcCosts-timeCost) : gross;
+  const gp=pct(gross,cTotal), np=pct(net,cTotal);
+  const v=$("#verdict");
+  let band; const npv=np||0;
+  if(net<0) band=["red","You'd lose money self-GC'ing"];
+  else if(npv<25) band=["amber","Thin margin — within normal GC markup"];
+  else band=["green","Strong savings — worth considering"];
+  v.innerHTML=`
+    <div class="grid">
+      <div class="stat"><span class="k">Contractor total</span><span class="v">${money(cTotal)}</span></div>
+      <div class="stat"><span class="k">Your DIY total</span><span class="v">${money(dTotal)}</span></div>
+      <div class="stat"><span class="k">Gross savings</span><span class="v" style="color:var(--green)">${money(gross)} (${pctTxt(gp)})</span></div>
+      <div class="stat"><span class="k">Self-GC costs</span><span class="v" style="color:var(--amber)">${state.selfgcOn?"-"+money(gcCosts):"off"}</span></div>
+      <div class="stat"><span class="k">Net savings</span><span class="v" style="color:var(--${band[0]})">${money(net)} (${pctTxt(np)})</span></div>
+    </div>
+    <div class="read">
+      <span class="pill b-${band[0]}">${band[1]}</span>
+      &nbsp; A typical GC markup is <b>15–25%</b>. You're ${gp!==null&&gp>25?"<b>above</b>":"<b>within</b>"} that band, so ${gp!==null&&gp>25?"there's real room to self-GC or negotiate.":"the contractor's price is roughly fair for the convenience."}
+      &nbsp;Excluding the value of your time (${money(num(sc.timeHrs)*num(sc.timeRate))}), net is <b>${money(netNoTime)}</b>.
+      Remember: their price is <b>fixed</b>; your DIY total isn't — overruns are yours.
+    </div>
+    ${topOppsHTML(opps)}`;
+}
+function topOppsHTML(opps){
+  if(!opps || !opps.length) return "";
+  const top = opps.filter(o=>o.sav>0).sort((a,b)=>b.sav-a.sav).slice(0,3);
+  if(!top.length) return "";
+  const items = top.map((o,i)=>`<b>${i+1}.</b> ${o.name.replace(/—.*$/,'').trim()} — <b style="color:var(--green)">${money(o.sav)}</b> (${pctTxt(o.pct)})`).join(" &nbsp;·&nbsp; ");
+  return `<div class="opps">🎯 <b>Biggest lines to fight:</b> ${items}</div>`;
+}
+
+/* ---------- toolbar ---------- */
+$("#addSection").addEventListener("click",()=>{ state.sections.push(mk("New line item",0,[{name:"Material",qty:1,unit:"ea",cost:0}],[{task:"Task",trade:"general",hours:1}])); save(); render(); });
+$("#selfgcToggle").addEventListener("change",e=>{ state.selfgcOn=e.target.checked; recompute(); save(); });
+$("#printBtn").addEventListener("click",()=>window.print());
+$("#resetBtn").addEventListener("click",()=>{ if(confirm("Reset all numbers to NYC defaults? Your edits will be lost.")){ localStorage.removeItem(STORE_KEY); state=defaults(); render(); } });
+$("#exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="nyc-reno-breakdown.json"; a.click(); URL.revokeObjectURL(a.href);
+});
+$("#importBtn").addEventListener("click",()=>$("#importFile").click());
+$("#importFile").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{ try{ const s=JSON.parse(r.result);
+    if(!s||typeof s!=="object"){ alert("Import failed: not a valid snapshot. Your current data was kept."); return; }
+    state=coerce(s); render(); save();   // coerce repairs partial/older files instead of rejecting
+  }catch(err){ alert("Import failed: not valid JSON. Your current data was kept."); } };
+  r.readAsText(f); e.target.value="";
+});
+
+render();
+</script>
+</body>
+</html>
