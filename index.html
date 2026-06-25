@@ -8,6 +8,10 @@
   /* set theme before paint to avoid a flash */
   (function(){ try{ var t=localStorage.getItem("nyc-reno-theme"); if(t!=="light"&&t!=="dark") t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"; document.documentElement.setAttribute("data-theme",t);}catch(e){ document.documentElement.setAttribute("data-theme","light"); } })();
 </script>
+<!-- Closest free equivalents to the reference's Recoleta (headings) + Elza (body), which are paid fonts. Falls back to system fonts offline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   /* ---- Light theme (default, warm editorial palette) ---- */
   :root, :root[data-theme="light"]{
@@ -19,7 +23,8 @@
     --input-bg:#FFFFFF; --input-bd:#DCD1C4;
     --shadow:0 1px 2px rgba(27,22,36,.04), 0 6px 22px rgba(27,22,36,.06);
     --shadow-up:0 -8px 28px rgba(27,22,36,.10);
-    --serif:"Recoleta", Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --serif:"Fraunces", "Recoleta", Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --sans:"Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   /* ---- Dark theme ---- */
   :root[data-theme="dark"]{
@@ -31,10 +36,11 @@
     --input-bg:#14121B; --input-bd:#39334A;
     --shadow:0 8px 26px rgba(0,0,0,.42);
     --shadow-up:0 -8px 28px rgba(0,0,0,.5);
-    --serif:"Recoleta", Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --serif:"Fraunces", "Recoleta", Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --sans:"Hanken Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:14.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:var(--bg);color:var(--text);font-size:14.5px;line-height:1.5;font-family:var(--sans);-webkit-font-smoothing:antialiased}
   a{color:var(--accent)}
   header{padding:26px 24px 22px;border-bottom:1px solid var(--line);background:var(--panel)}
   header .inner{max-width:1180px;margin:0 auto}
@@ -102,8 +108,15 @@
   .modetoggle:hover{text-decoration:underline}
   .pie-wrap{display:flex;gap:28px;flex-wrap:wrap;align-items:center;padding:18px}
   .legend{display:flex;flex-direction:column;gap:6px;font-size:13px;min-width:240px}
-  .leg{display:flex;align-items:center;gap:8px}
+  .leg{display:flex;align-items:center;gap:8px;cursor:default;padding:1px 4px;border-radius:6px}
+  .leg:hover{background:var(--accent-soft)}
   .leg .sw{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+  .pie-svg-wrap{position:relative}
+  .slice{cursor:pointer;transition:opacity .12s}
+  .slice:hover{opacity:.82}
+  .pie-tip{position:absolute;display:none;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:9px;padding:8px 11px;font-size:12.5px;line-height:1.45;z-index:10;max-width:240px}
+  .pie-tip b{font-family:var(--serif)}
+  .verdict .tlnum{font-family:var(--serif);font-weight:600;color:var(--accent);font-size:16px}
   .footnote{margin-top:20px;font-size:12px;color:var(--muted);line-height:1.6}
   @media print{
     body{background:#fff;color:#000}
@@ -114,7 +127,8 @@
     /* widen selector so it beats :root[data-theme="dark"] specificity → print is always light/ink-safe */
     :root, :root[data-theme="light"], :root[data-theme="dark"]{
       --bg:#fff;--panel:#fff;--panel2:#f5f1ec;--line:#cfc6ba;--text:#000;--muted:#444;--input-bg:#fff;--input-bd:#ccc;
-      --green:#0a7a4f;--greenbg:#e4f3ec;--amber:#8a5a14;--amberbg:#f6ead2;--red:#b3322c;--redbg:#fbe6e4;--accent:#0a4fb3;--accent-soft:rgba(10,79,179,.08)
+      --green:#0a7a4f;--greenbg:#e4f3ec;--amber:#8a5a14;--amberbg:#f6ead2;--red:#b3322c;--redbg:#fbe6e4;--accent:#0a4fb3;--accent-soft:rgba(10,79,179,.08);
+      --serif:Georgia,"Times New Roman",serif; --sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif
     }
   }
 </style>
@@ -655,7 +669,7 @@ function paintVerdict(cTotal,dTotal,opps,totalDays){
       <span class="pill b-${band[0]}">${band[1]}</span>
       &nbsp; A typical GC markup is <b>15–25%</b>. You're ${gp!==null&&gp>25?"<b>above</b>":"<b>within</b>"} that band, so ${gp!==null&&gp>25?"there's real room to self-GC or negotiate.":"the contractor's price is roughly fair for the convenience."}
       &nbsp;Excluding the value of your time (${money(timeCost)}), net is <b>${money(netNoTime)}</b>.
-      &nbsp;⏱ Est. timeline <b>~${Math.round(totalDays)} working days</b> if run sequentially (overlapping trades shorten the real calendar).
+      <br>⏱ Est. timeline <span class="tlnum">~${Math.round(totalDays)} working days</span> <span class="small">if run sequentially — overlapping trades shorten the real calendar.</span><br>
       Remember: their price is <b>fixed</b>; your DIY total isn't — overruns are yours.
       ${(()=>{ const L=opps.filter(o=>o.sav<0).length; return L?`<br>↪ <b>${L} line${L>1?'s':''} favor the contractor</b> (DIY costs more there) — the best play is line-by-line, not all-or-nothing. Check each line's badge.`:''; })()}
     </div>
@@ -680,17 +694,41 @@ function renderPie(){
   const cx=110,cy=110,r=100; let ang=-Math.PI/2; let paths="", legend="";
   data.forEach((d,i)=>{
     const frac=d.value/total, color=PIE_COLORS[i%PIE_COLORS.length];
-    if(data.length===1){ paths=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"></circle>`; }
+    if(data.length===1){ paths=`<circle class="slice" data-i="0" cx="${cx}" cy="${cy}" r="${r}" fill="${color}" stroke="var(--panel)" stroke-width="1.5"></circle>`; }
     else{
       const a2=ang+frac*2*Math.PI;
       const x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang), x2=cx+r*Math.cos(a2), y2=cy+r*Math.sin(a2);
       const large=frac>0.5?1:0;
-      paths+=`<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${color}"></path>`;
+      paths+=`<path class="slice" data-i="${i}" d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${color}" stroke="var(--panel)" stroke-width="1.5"></path>`;
       ang=a2;
     }
-    legend+=`<div class="leg"><span class="sw" style="background:${color}"></span><span>${d.label} — <b>${money(d.value)}</b> (${Math.round(frac*100)}%)</span></div>`;
+    legend+=`<div class="leg" data-i="${i}"><span class="sw" style="background:${color}"></span><span>${d.label} — <b>${money(d.value)}</b> (${Math.round(frac*100)}%)</span></div>`;
   });
-  host.innerHTML=`<div class="pie-wrap"><svg viewBox="0 0 220 220" width="200" height="200" role="img" aria-label="cost share pie chart">${paths}</svg><div class="legend">${legend}</div></div>`;
+  host.innerHTML=`<div class="pie-wrap"><div class="pie-svg-wrap"><svg viewBox="0 0 220 220" width="210" height="210" role="img" aria-label="cost share pie chart">${paths}</svg><div class="pie-tip" id="pieTip"></div></div><div class="legend">${legend}</div></div>`;
+  // hover tooltip on slices (and legend rows) showing label, $ and share
+  const tip=host.querySelector("#pieTip"), svgwrap=host.querySelector(".pie-svg-wrap");
+  const showTip=(i,e)=>{
+    const d=data[i]; if(!d||!tip) return;
+    tip.innerHTML=`<b>${d.label}</b><br>${money(d.value)} · ${Math.round(d.value/total*100)}% of ${pieMode==="diy"?"your DIY":"contractor"} total`;
+    tip.style.display="block";
+    const rb=svgwrap.getBoundingClientRect();
+    let x=e.clientX-rb.left+14, y=e.clientY-rb.top+10;
+    x=Math.min(x, rb.width-tip.offsetWidth-4);
+    y=Math.min(y, rb.height-tip.offsetHeight-4);
+    tip.style.left=Math.max(4,x)+"px"; tip.style.top=Math.max(4,y)+"px";
+  };
+  const hideTip=()=>{ if(tip) tip.style.display="none"; };
+  const emph=(i,on)=>{ host.querySelectorAll(".slice").forEach(s=>{ s.style.opacity = on ? (+s.dataset.i===i?"1":".32") : ""; }); };
+  host.querySelectorAll(".slice").forEach(s=>{
+    s.addEventListener("mousemove",e=>showTip(+s.dataset.i,e));
+    s.addEventListener("mouseleave",hideTip);
+  });
+  host.querySelectorAll(".leg").forEach(l=>{
+    const i=+l.dataset.i;
+    l.addEventListener("mouseenter",e=>{ emph(i,true); showTip(i,e); });
+    l.addEventListener("mousemove",e=>showTip(i,e));
+    l.addEventListener("mouseleave",()=>{ emph(i,false); hideTip(); });
+  });
 }
 
 /* ---------- toolbar ---------- */
